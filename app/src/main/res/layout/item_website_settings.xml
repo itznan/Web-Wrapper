@@ -1,0 +1,125 @@
+<?xml version="1.0" encoding="utf-8"?>
+<com.google.android.material.card.MaterialCardView xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:layout_marginBottom="12dp"
+    app:cardCornerRadius="12dp"
+    app:cardElevation="2dp">
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <TextView
+            android:id="@+id/websiteUrl"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+            android:textStyle="bold"
+            android:maxLines="1"
+            android:ellipsize="end"
+            tools:text="https://example.com" />
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/cache_size"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <TextView
+                android:id="@+id/cacheSize"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textStyle="bold"
+                android:layout_marginEnd="16dp"
+                tools:text="2.5 MB" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/ignore_notch"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/ignoreNotchSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/hardware_accel"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/hardwareAccelSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:orientation="horizontal"
+            android:layout_marginTop="12dp"
+            android:gravity="center_vertical">
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/high_refresh"
+                android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                android:textColor="?attr/colorOnSurfaceVariant" />
+
+            <com.google.android.material.switchmaterial.SwitchMaterial
+                android:id="@+id/highRefreshSwitch"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content" />
+        </LinearLayout>
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/clearCacheButton"
+            style="@style/Widget.Material3.Button.OutlinedButton"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:text="@string/clear_cache" />
+    </LinearLayout>
+
+</com.google.android.material.card.MaterialCardView>
+

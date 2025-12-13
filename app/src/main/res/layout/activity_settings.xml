@@ -1,0 +1,133 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    tools:context=".SettingsActivity">
+
+    <com.google.android.material.appbar.MaterialToolbar
+        android:id="@+id/topAppBar"
+        style="@style/Widget.Material3.Toolbar.Surface"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:paddingHorizontal="16dp"
+        app:navigationIcon="@drawable/ic_back_24"
+        app:title="@string/settings" />
+
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="?attr/actionBarSize"
+        android:orientation="vertical"
+        android:padding="16dp">
+
+        <com.google.android.material.card.MaterialCardView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginBottom="24dp"
+            app:cardCornerRadius="12dp"
+            app:cardElevation="2dp">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:padding="16dp">
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/default_ignore_notch"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/default_ignore_notch_description"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/defaultIgnoreNotchSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/default_hardware_accel"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/default_hardware_accel_description"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/defaultHardwareAccelSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end" />
+
+                <View
+                    android:layout_width="match_parent"
+                    android:layout_height="12dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/default_high_refresh"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:textStyle="bold"
+                    android:layout_marginBottom="8dp" />
+
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="@string/default_high_refresh_description"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyMedium"
+                    android:textColor="?attr/colorOnSurfaceVariant"
+                    android:layout_marginBottom="8dp" />
+
+                <com.google.android.material.switchmaterial.SwitchMaterial
+                    android:id="@+id/defaultHighRefreshSwitch"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="end" />
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
+
+        <TextView
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:text="@string/website_settings"
+            android:textAppearance="@style/TextAppearance.Material3.HeadlineSmall"
+            android:textStyle="bold"
+            android:layout_marginBottom="16dp" />
+
+        <androidx.recyclerview.widget.RecyclerView
+            android:id="@+id/websitesRecyclerView"
+            android:layout_width="match_parent"
+            android:layout_height="0dp"
+            android:layout_weight="1"
+            android:clipToPadding="false"
+            android:paddingBottom="16dp"
+            tools:listitem="@layout/item_website_settings" />
+    </LinearLayout>
+
+</androidx.coordinatorlayout.widget.CoordinatorLayout>
+
