@@ -18,18 +18,33 @@ class HistoryRepository(context: Context) {
             val time = obj.optLong("time", 0L)
             val customName = obj.optString("customName").takeIf { it.isNotBlank() }
             val logoPath = obj.optString("logoPath").takeIf { it.isNotBlank() }
+            val tag = obj.optString("tag").takeIf { it.isNotBlank() }
             if (url.isNotBlank()) {
-                items.add(HistoryEntry(url, time, customName, logoPath))
+                items.add(HistoryEntry(url, time, customName, logoPath, tag))
             }
         }
         return items.sortedByDescending { it.timestamp }
     }
 
-    fun addEntry(url: String) {
+    fun addEntry(url: String, tag: String? = null) {
         val cleaned = url.trim()
         if (cleaned.isBlank()) return
         val current = getHistory().filterNot { it.url.equals(cleaned, ignoreCase = true) }
-        val updated = current + HistoryEntry(cleaned, System.currentTimeMillis())
+        val updated = current + HistoryEntry(cleaned, System.currentTimeMillis(), tag = tag?.trim()?.takeIf { it.isNotBlank() })
+        save(updated)
+    }
+
+    fun addEntryWithLogo(url: String, logoPath: String?, tag: String? = null) {
+        val cleaned = url.trim()
+        if (cleaned.isBlank()) return
+        val current = getHistory().filterNot { it.url.equals(cleaned, ignoreCase = true) }
+        val updated = current + HistoryEntry(
+            cleaned,
+            System.currentTimeMillis(),
+            customName = null,
+            logoPath = logoPath,
+            tag = tag?.trim()?.takeIf { it.isNotBlank() }
+        )
         save(updated)
     }
 
@@ -38,7 +53,7 @@ class HistoryRepository(context: Context) {
         save(updated)
     }
 
-    fun updateEntry(oldEntry: HistoryEntry, newName: String?, newLogoPath: String?) {
+    fun updateEntry(oldEntry: HistoryEntry, newName: String?, newLogoPath: String?, newTag: String? = oldEntry.tag) {
         val current = getHistory().toMutableList()
         val index = current.indexOfFirst { it.url.equals(oldEntry.url, ignoreCase = true) }
         if (index >= 0) {
@@ -46,7 +61,8 @@ class HistoryRepository(context: Context) {
                 url = oldEntry.url,
                 timestamp = oldEntry.timestamp,
                 customName = newName?.takeIf { it.isNotBlank() },
-                logoPath = newLogoPath?.takeIf { it.isNotBlank() }
+                logoPath = newLogoPath?.takeIf { it.isNotBlank() },
+                tag = newTag?.takeIf { it.isNotBlank() }
             )
             save(current)
         }
@@ -64,6 +80,7 @@ class HistoryRepository(context: Context) {
             obj.put("time", item.timestamp)
             item.customName?.let { obj.put("customName", it) }
             item.logoPath?.let { obj.put("logoPath", it) }
+            item.tag?.let { obj.put("tag", it) }
             jsonArray.put(obj)
         }
         prefs.edit().putString(KEY_HISTORY, jsonArray.toString()).apply()

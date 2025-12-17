@@ -13,28 +13,47 @@ import java.util.Locale
 class HistoryAdapter(
     private val onClick: (HistoryEntry) -> Unit,
     private val onDelete: (HistoryEntry) -> Unit,
-    private val onEdit: (HistoryEntry) -> Unit
+    private val onEdit: (HistoryEntry) -> Unit,
+    private val onLongPress: (HistoryEntry) -> Unit
 ) : RecyclerView.Adapter<HistoryAdapter.ViewHolder>() {
 
     private val allItems = mutableListOf<HistoryEntry>()
     private val visibleItems = mutableListOf<HistoryEntry>()
+    private var currentQuery: String = ""
+    private var currentTagFilter: String? = null
 
     fun setItems(items: List<HistoryEntry>) {
         allItems.clear()
         allItems.addAll(items)
-        filter("")
+        applyFilters()
     }
 
     fun filter(query: String) {
-        val text = query.trim().lowercase(Locale.getDefault())
+        currentQuery = query
+        applyFilters()
+    }
+
+    fun setTagFilter(tag: String?) {
+        currentTagFilter = tag?.trim()?.takeIf { it.isNotBlank() }
+        applyFilters()
+    }
+
+    private fun applyFilters() {
+        val text = currentQuery.trim().lowercase(Locale.getDefault())
+        val tag = currentTagFilter?.lowercase(Locale.getDefault())
+
         visibleItems.clear()
-        if (text.isEmpty()) {
-            visibleItems.addAll(allItems)
-        } else {
-            visibleItems.addAll(
-                allItems.filter { it.url.lowercase(Locale.getDefault()).contains(text) }
-            )
-        }
+        visibleItems.addAll(
+            allItems.filter { entry ->
+                val matchesText = text.isEmpty() || (entry.url.lowercase(Locale.getDefault()).contains(text)) ||
+                    (entry.customName?.lowercase(Locale.getDefault())?.contains(text) == true)
+
+                val entryTag = entry.tag?.lowercase(Locale.getDefault())
+                val matchesTag = tag == null || entryTag == tag
+
+                matchesText && matchesTag
+            }
+        )
         notifyDataSetChanged()
     }
 
@@ -86,6 +105,10 @@ class HistoryAdapter(
             }
 
             binding.root.setOnClickListener { onClick(entry) }
+            binding.root.setOnLongClickListener {
+                onLongPress(entry)
+                true
+            }
             binding.editButton.setOnClickListener { onEdit(entry) }
             binding.deleteButton.setOnClickListener { onDelete(entry) }
         }

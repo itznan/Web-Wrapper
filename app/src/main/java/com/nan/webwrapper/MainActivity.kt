@@ -7,22 +7,30 @@ import android.net.Uri
 import android.os.Bundle
 import android.text.Editable
 import android.text.TextWatcher
+import android.view.View
+import android.widget.ArrayAdapter
 import android.widget.EditText
 import android.widget.ImageView
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.view.isVisible
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
+import com.google.android.material.chip.Chip
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 import com.nan.webwrapper.databinding.ActivityMainBinding
 import com.google.android.material.dialog.MaterialAlertDialogBuilder
 import com.google.android.material.snackbar.Snackbar
+import kotlinx.coroutines.launch
 import java.io.File
 import java.io.FileOutputStream
+import java.util.Locale
 
 class MainActivity : AppCompatActivity() {
 
     private lateinit var binding: ActivityMainBinding
     private lateinit var repository: HistoryRepository
+    private lateinit var faviconFetcher: FaviconFetcher
     private val adapter = HistoryAdapter(
         onClick = { openWebView(it.url) },
         onDelete = { entry ->
@@ -31,8 +39,113 @@ class MainActivity : AppCompatActivity() {
         },
         onEdit = { entry ->
             showEditDialog(entry)
+        },
+        onLongPress = { entry ->
+            showChangeTagDialog(entry)
         }
     )
+
+    private fun getKnownTags(history: List<HistoryEntry> = repository.getHistory()): List<String> {
+        return history.mapNotNull { it.tag?.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase(Locale.getDefault()) }
+            .sortedBy { it.lowercase(Locale.getDefault()) }
+    }
+
+    private fun showChangeTagDialog(entry: HistoryEntry) {
+        val tags = getKnownTags()
+        val options = ArrayList<String>(tags.size + 2).apply {
+            add(getString(R.string.tag_none))
+            addAll(tags)
+            add(getString(R.string.new_tag))
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.change_tag)
+            .setItems(options.toTypedArray()) { _, which ->
+                when (val selected = options[which]) {
+                    getString(R.string.tag_none) -> {
+                        repository.updateEntry(entry, entry.customName, entry.logoPath, "")
+                        loadHistory()
+                    }
+                    getString(R.string.new_tag) -> {
+                        showNewTagDialog(entry)
+                    }
+                    else -> {
+                        repository.updateEntry(entry, entry.customName, entry.logoPath, selected)
+                        loadHistory()
+                    }
+                }
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun showNewTagDialog(entry: HistoryEntry) {
+        val input = com.google.android.material.textfield.TextInputEditText(this).apply {
+            inputType = android.text.InputType.TYPE_CLASS_TEXT or android.text.InputType.TYPE_TEXT_FLAG_CAP_WORDS
+            setText(entry.tag.orEmpty())
+        }
+
+        MaterialAlertDialogBuilder(this)
+            .setTitle(R.string.new_tag)
+            .setView(input)
+            .setPositiveButton(android.R.string.ok) { _, _ ->
+                val newTag = input.text?.toString().orEmpty().trim()
+                repository.updateEntry(entry, entry.customName, entry.logoPath, newTag)
+                loadHistory()
+            }
+            .setNegativeButton(android.R.string.cancel, null)
+            .show()
+    }
+
+    private fun updateTagChips(history: List<HistoryEntry>) {
+        val tags = history.mapNotNull { it.tag?.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase(Locale.getDefault()) }
+            .sortedBy { it.lowercase(Locale.getDefault()) }
+
+        val chipGroup = binding.tagChipGroup
+        val currentSelection = chipGroup.checkedChipId
+        chipGroup.removeAllViews()
+
+        fun addChip(label: String, tagValue: String?) {
+            val chip = Chip(this).apply {
+                id = View.generateViewId()
+                text = label
+                isCheckable = true
+                isCheckedIconVisible = false
+            }
+            chip.setOnCheckedChangeListener { button, isChecked ->
+                if (!isChecked) return@setOnCheckedChangeListener
+                // Ensure single selection behavior
+                for (i in 0 until chipGroup.childCount) {
+                    val child = chipGroup.getChildAt(i)
+                    if (child is Chip && child != button) {
+                        child.isChecked = false
+                    }
+                }
+
+                adapter.setTagFilter(tagValue)
+                adapter.filter(binding.searchEditText.text?.toString().orEmpty())
+                binding.emptyView.isVisible = adapter.itemCount == 0
+            }
+            chipGroup.addView(chip)
+        }
+
+        addChip(getString(R.string.tag_all), null)
+        tags.forEach { tag ->
+            addChip(tag, tag)
+        }
+
+        // Restore selection if possible; otherwise default to All.
+        val restored = (0 until chipGroup.childCount)
+            .mapNotNull { chipGroup.getChildAt(it) as? Chip }
+            .firstOrNull { it.id == currentSelection }
+        if (restored == null) {
+            (chipGroup.getChildAt(0) as? Chip)?.isChecked = true
+        }
+    }
 
     private val addWebsiteLauncher = registerForActivityResult(
         ActivityResultContracts.StartActivityForResult()
@@ -63,16 +176,34 @@ class MainActivity : AppCompatActivity() {
     private var currentEditingDialogLogoUri: Uri? = null
     private var currentEditingDialogImageView: ImageView? = null
 
+    private lateinit var patternManager: PatternLockManager
+    private val patternLockLauncher = registerForActivityResult(
+        ActivityResultContracts.StartActivityForResult()
+    ) { result ->
+        if (result.resultCode != RESULT_OK) {
+            // Pattern verification failed or cancelled - exit app
+            finish()
+        }
+    }
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        
+        patternManager = PatternLockManager(this)
+        
         binding = ActivityMainBinding.inflate(layoutInflater)
         setContentView(binding.root)
 
         repository = HistoryRepository(this)
+        faviconFetcher = FaviconFetcher(this)
+        
+        // Check if pattern lock is enabled and verify pattern
+        checkPatternLock()
 
         setupToolbar()
         setupList()
         setupSearch()
+        setupTagFilter()
         setupFab()
     }
 
@@ -119,9 +250,24 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+    private fun setupTagFilter() {
+        // Default selection: All
+        adapter.setTagFilter(null)
+    }
+
     private fun setupFab() {
         binding.addFab.setOnClickListener { navigateToAddWebsite() }
         binding.githubButton.setOnClickListener { openGitHub() }
+    }
+
+    private fun checkPatternLock() {
+        if (patternManager.isPatternLockEnabled() && patternManager.hasPattern()) {
+            // Show pattern lock screen
+            val intent = Intent(this, PatternLockActivity::class.java).apply {
+                putExtra(PatternLockActivity.EXTRA_MODE, PatternLockActivity.MODE_VERIFY)
+            }
+            patternLockLauncher.launch(intent)
+        }
     }
 
     private fun openGitHub() {
@@ -138,6 +284,7 @@ class MainActivity : AppCompatActivity() {
         val history = repository.getHistory()
         adapter.setItems(history)
         binding.emptyView.isVisible = history.isEmpty()
+        updateTagChips(history)
     }
 
     private fun openWebView(url: String) {
@@ -175,12 +322,21 @@ class MainActivity : AppCompatActivity() {
         currentEditingDialogLogoUri = null
         val dialogView = layoutInflater.inflate(R.layout.dialog_edit_history, null)
         val nameEditText = dialogView.findViewById<EditText>(R.id.nameEditText)
+        val tagEditText = dialogView.findViewById<MaterialAutoCompleteTextView>(R.id.tagEditText)
         val logoImageView = dialogView.findViewById<ImageView>(R.id.logoImageView)
         val pickLogoButton = dialogView.findViewById<com.google.android.material.button.MaterialButton>(R.id.pickLogoButton)
         
         currentEditingDialogImageView = logoImageView
         
         nameEditText.setText(entry.customName ?: entry.url)
+        tagEditText.setText(entry.tag.orEmpty())
+
+        val tagAdapter = ArrayAdapter(
+            this,
+            android.R.layout.simple_list_item_1,
+            getKnownTags()
+        )
+        tagEditText.setAdapter(tagAdapter)
         
         // Load existing logo if available
         entry.logoPath?.let { path ->
@@ -209,6 +365,7 @@ class MainActivity : AppCompatActivity() {
             .setView(dialogView)
             .setPositiveButton(R.string.save) { _, _ ->
                 val newName = nameEditText.text.toString().trim()
+                val newTag = tagEditText.text?.toString().orEmpty().trim()
                 val logoPath = if (currentEditingDialogLogoUri != null) {
                     // Save new logo
                     currentEditingDialogLogoUri?.let { uri ->
@@ -219,7 +376,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 
                 // Update entry with new name and logo path
-                repository.updateEntry(entry, newName.takeIf { it.isNotEmpty() && it != entry.url }, logoPath)
+                repository.updateEntry(entry, newName.takeIf { it.isNotEmpty() && it != entry.url }, logoPath, newTag)
                 loadHistory()
                 currentEditingEntry = null
                 currentEditingDialogLogoUri = null
@@ -231,7 +388,7 @@ class MainActivity : AppCompatActivity() {
                 currentEditingDialogImageView = null
             }
             .setNeutralButton(R.string.remove_logo) { _, _ ->
-                repository.updateEntry(entry, entry.customName, null)
+                repository.updateEntry(entry, entry.customName, null, entry.tag)
                 loadHistory()
                 currentEditingEntry = null
                 currentEditingDialogLogoUri = null

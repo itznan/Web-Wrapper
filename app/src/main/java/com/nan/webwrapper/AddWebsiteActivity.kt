@@ -3,9 +3,11 @@ package com.nan.webwrapper
 import android.content.Intent
 import android.os.Bundle
 import android.util.Patterns
+import android.widget.ArrayAdapter
 import androidx.appcompat.app.AppCompatActivity
 import com.nan.webwrapper.databinding.ActivityAddWebsiteBinding
 import com.google.android.material.snackbar.Snackbar
+import com.google.android.material.textfield.MaterialAutoCompleteTextView
 
 class AddWebsiteActivity : AppCompatActivity() {
 
@@ -19,12 +21,29 @@ class AddWebsiteActivity : AppCompatActivity() {
 
         repository = HistoryRepository(this)
 
+        setupTagSuggestions()
+
         binding.topAppBar.setNavigationOnClickListener { onBackPressedDispatcher.onBackPressed() }
         binding.openButton.setOnClickListener { handleOpen() }
     }
 
+    private fun setupTagSuggestions() {
+        val tags = repository.getHistory()
+            .mapNotNull { it.tag?.trim() }
+            .filter { it.isNotBlank() }
+            .distinctBy { it.lowercase(java.util.Locale.getDefault()) }
+            .sortedBy { it.lowercase(java.util.Locale.getDefault()) }
+
+        val view = binding.tagEditText
+        if (view is MaterialAutoCompleteTextView) {
+            val adapter = ArrayAdapter(this, android.R.layout.simple_list_item_1, tags)
+            view.setAdapter(adapter)
+        }
+    }
+
     private fun handleOpen() {
         val urlInput = binding.urlEditText.text?.toString().orEmpty().trim()
+        val tagInput = binding.tagEditText.text?.toString().orEmpty().trim()
         
         // Use native URL validation and normalization for better performance
         val validUrl = if (NativeHelper.isNativeLibraryLoaded()) {
@@ -44,7 +63,9 @@ class AddWebsiteActivity : AppCompatActivity() {
             return
         }
 
-        repository.addEntry(validUrl)
+        // Add entry first
+        repository.addEntry(validUrl, tag = tagInput)
+        
         val intent = Intent(this, WebViewActivity::class.java).apply {
             putExtra(WebViewActivity.EXTRA_URL, validUrl)
         }

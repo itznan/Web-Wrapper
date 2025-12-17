@@ -15,18 +15,22 @@
         app:menu="@menu/menu_main"
         app:title="@string/app_name" />
 
-    <LinearLayout
+    <androidx.constraintlayout.widget.ConstraintLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:layout_marginTop="?attr/actionBarSize"
-        android:orientation="vertical"
         android:padding="16dp">
 
         <com.google.android.material.textfield.TextInputLayout
+            android:id="@+id/searchInputLayout"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:hint="@string/search_hint"
-            app:startIconDrawable="@drawable/ic_search_24">
+            app:boxBackgroundMode="outline"
+            app:startIconDrawable="@drawable/ic_search_24"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toTopOf="parent">
 
             <com.google.android.material.textfield.TextInputEditText
                 android:id="@+id/searchEditText"
@@ -36,34 +40,69 @@
                 android:inputType="text" />
         </com.google.android.material.textfield.TextInputLayout>
 
-        <TextView
+        <com.google.android.material.chip.ChipGroup
+            android:id="@+id/tagChipGroup"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:singleLine="true"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/searchInputLayout" />
+
+        <com.google.android.material.card.MaterialCardView
             android:id="@+id/emptyView"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:gravity="center"
-            android:text="@string/empty_history"
-            android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
-            android:visibility="gone" />
+            android:layout_marginTop="16dp"
+            android:visibility="gone"
+            app:cardElevation="0dp"
+            app:strokeWidth="1dp"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/tagChipGroup">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:gravity="center"
+                android:orientation="vertical"
+                android:padding="20dp">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/empty_history"
+                    android:textAppearance="@style/TextAppearance.Material3.BodyLarge"
+                    android:textColor="?attr/colorOnSurface"
+                    android:gravity="center" />
+
+            </LinearLayout>
+        </com.google.android.material.card.MaterialCardView>
 
         <androidx.recyclerview.widget.RecyclerView
             android:id="@+id/historyRecyclerView"
             android:layout_width="match_parent"
             android:layout_height="0dp"
-            android:layout_marginTop="8dp"
-            android:layout_weight="1"
+            android:layout_marginTop="12dp"
             android:clipToPadding="false"
             android:paddingBottom="16dp"
+            app:layout_constraintBottom_toBottomOf="parent"
+            app:layout_constraintEnd_toEndOf="parent"
+            app:layout_constraintStart_toStartOf="parent"
+            app:layout_constraintTop_toBottomOf="@id/emptyView"
             tools:listitem="@layout/item_history" />
-    </LinearLayout>
 
-    <com.google.android.material.floatingactionbutton.FloatingActionButton
+    </androidx.constraintlayout.widget.ConstraintLayout>
+
+    <com.google.android.material.floatingactionbutton.ExtendedFloatingActionButton
         android:id="@+id/addFab"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
         android:layout_gravity="bottom|end"
         android:layout_margin="16dp"
         app:layout_anchorGravity="bottom|end"
+        android:text="@string/add_website"
         app:srcCompat="@drawable/ic_add_24" />
 
     <ImageButton
