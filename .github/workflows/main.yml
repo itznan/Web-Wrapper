@@ -4,8 +4,6 @@ on:
   push:
     branches:
       - main
-    tags:
-      - "v*"
   workflow_dispatch:
 
 permissions:
@@ -16,7 +14,6 @@ jobs:
     runs-on: ubuntu-latest
 
     steps:
-      # ---------- CHECKOUT ----------
       - name: Checkout repository
         uses: actions/checkout@v4
         with:
@@ -25,7 +22,6 @@ jobs:
       - name: Validate Gradle Wrapper
         uses: gradle/actions/wrapper-validation@v4
 
-      # ---------- JAVA ----------
       - name: Set up JDK 17
         uses: actions/setup-java@v4
         with:
@@ -33,7 +29,6 @@ jobs:
           java-version: 17
           cache: gradle
 
-      # ---------- ANDROID SDK/NDK/CMAKE ----------
       - name: Set up Android SDK
         uses: android-actions/setup-android@v3
 
@@ -42,26 +37,19 @@ jobs:
           sdkmanager --install "platforms;android-34" "build-tools;34.0.0" "cmake;3.22.1" "ndk;26.1.10909125"
           yes | sdkmanager --licenses
 
-      # ---------- GRADLE ----------
       - name: Grant execute permission for gradlew
         run: chmod +x ./gradlew
 
       - name: Remove local.properties for CI
         run: rm -f local.properties
 
-      # ---------- VERSION ----------
-      - name: Generate version from IST date + commit
+      - name: Generate build label
         id: version
         shell: bash
         run: |
-          if [[ "${GITHUB_REF}" == refs/tags/* ]]; then
-            echo "version=${GITHUB_REF#refs/tags/}" >> "$GITHUB_OUTPUT"
-          else
-            export TZ=Asia/Kolkata
-            echo "version=v$(date +'%Y.%m.%d_%H-%M')-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
-          fi
+          export TZ=Asia/Kolkata
+          echo "version=v$(date +'%Y.%m.%d_%H-%M')-${GITHUB_SHA::7}" >> "$GITHUB_OUTPUT"
 
-      # ---------- DEBUG APK ----------
       - name: Build Debug APK
         run: ./gradlew :app:assembleDebug --no-daemon
 
@@ -77,7 +65,6 @@ jobs:
           retention-days: 30
         if: always()
 
-      # ---------- RELEASE APK ----------
       - name: Build Release APK
         run: ./gradlew :app:assembleRelease --no-daemon
 
@@ -93,13 +80,13 @@ jobs:
           retention-days: 30
         if: always()
 
-      # ---------- GITHUB RELEASE ----------
-      - name: Create GitHub Release
-        if: github.event_name == 'workflow_dispatch' || startsWith(github.ref, 'refs/tags/')
+      - name: Create/Update GitHub Release (main)
+        if: github.ref == 'refs/heads/main'
         uses: softprops/action-gh-release@v2
         with:
-          tag_name: ${{ steps.version.outputs.version }}
-          name: Web Wrapper – ${{ steps.version.outputs.version }}
+          tag_name: nightly
+          name: Web Wrapper (main) – ${{ steps.version.outputs.version }}
+          prerelease: true
           target_commitish: ${{ github.sha }}
           files: |
             app/build/outputs/apk/debug/*.apk
